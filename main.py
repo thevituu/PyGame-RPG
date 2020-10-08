@@ -29,6 +29,9 @@ class Player:
 class PlayerLogic:
     def __init__(self, name, max_health, mana, crit, attacks):
         self.name = name
+        self.level = 1
+        self.max_exp = int((self.level * 22)**(1.5)*0.5)
+        self.current_exp = 0
         self.max_health = max_health
         self.mana = mana
         self.crit = crit
@@ -62,12 +65,15 @@ class PlayerLogic:
                     self.health += lifesteal
                 print("%s hat sich um %s Lebenspunkte geheilt." % (self.name, str(lifesteal)))
 
-
-
     def func_crit(self):
         critical = round(random.uniform(0, 1),2)
         if critical <= self.crit:
             return True
+
+    def level_up(self):
+        self.level += 1
+        self.max_exp=(self.level * 22) ** (1.5) * 0.3 #Exponentielle EXP-Steigerung
+
 
 
 
@@ -75,8 +81,10 @@ class PlayerLogic:
 
 
 class Enemy():
-    def __init__(self, name, health, damage, speed, crit, attacks):
+    def __init__(self, name, level, health, damage, speed, crit, attacks):
         self.name = name
+        self.level = level
+        self.exp = int((self.level * 22)**(1.5)*0.04) #EXP, die bei Sieg an den Spieler gegeben wird
         self.health = health
         self.damage = damage
         self.speed = speed
@@ -116,6 +124,7 @@ class Enemy():
 class Warrior(PlayerLogic):
     def __init__(self, name, attacks):
         PlayerLogic.__init__(self, name=name, max_health=13, mana=10, crit=0.3, attacks=attacks)
+        self.health = self.max_health
         self.speed = 5
 
 class Mage(PlayerLogic):
@@ -123,6 +132,7 @@ class Mage(PlayerLogic):
         PlayerLogic.__init__(self, name=name, max_health=10, mana=20, crit=0.15, attacks=attacks)
         self.health = self.max_health
         self.speed = 3
+
 
 
 
@@ -182,6 +192,11 @@ def fight(player, enemy):  #Kampfablauf 1v1 unter Berücksichtigung von Speed
         if player.health <= 0:
             print("Du bist gestorben.")
         elif enemy.health <= 0:
+            player.current_exp += enemy.exp
+            if player.current_exp >= player.max_exp:
+                z = player.current_exp - player.max_exp #berechnet überschüssige EXP nach level up
+                player.level_up()
+                player.current_exp = 0 + z #fügt überschüssige EXP zum neuen Level hinzu
             print("Der Gegner ist gestorben.")
 
 
@@ -207,7 +222,7 @@ time.sleep(0.5)
 #Gegnerattacken
 beissen = Attacken("Beißen", 2, 0, 0.9, "schaden", "Der Gegner rennt auf %s zu und beißt ihm in die Hand." %(spieler.name))
 ueberrennen = Attacken("Überrennen", 4, 0, 0.9, "schaden", "Der Gegner überrennt %s." %spieler.name)
-schwein = Enemy("hässliches Warzenschwein", 30, 6, 2, 0.2, {1: beissen, 2: ueberrennen})
+schwein = Enemy("hässliches Warzenschwein", 1, 5, 6, 2, 0.2, {1: beissen, 2: ueberrennen})
 
 #Attacken
 #Warrior
@@ -221,6 +236,7 @@ lebensentzug = Attacken("Lebensentzug", 5, 0, 0.7, "lebensraub", "%s richtet sei
 
 #Klassen und Attackenzuweisung für den Spieler
 spieler = Mage(spieler.name, {1: energieschuss, 2: lebensentzug})
+
 
 fight(spieler, schwein)
 
